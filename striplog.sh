@@ -1,0 +1,1 @@
+cat $1 | awk '{print $1}{$1="";  print}' | jq -R -r '. as $line | try fromjson catch $line' -- > stripped_$1
