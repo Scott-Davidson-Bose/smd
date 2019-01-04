@@ -1,0 +1,79 @@
+@startuml
+title \nDisplay available Voice Assistants\n\n
+
+actor User
+participant Madrid
+
+box "BoseCloud"
+  participant VoiceConfig
+  participant ProductState
+  participant ProductProfile
+end box
+
+User->Madrid: - **OOB:** before //Voice// screen\nor\n- **Non-OOB:** user selected\n   //a product//->//Settings//
+note over Madrid
+  Get list of available VPA
+  services for prodId
+end note
+Madrid->VoiceConfig: GET /services?productID=<prodId>\nX-User-Token:<userJWT>
+VoiceConfig->ProductState: GET /state/<prodId>
+ProductState-->VoiceConfig: response {fwVer, prodType}
+VoiceConfig->ProductProfile: GET /profiles?firmwareVersion=<fwVer>&productType=<prodType>
+ProductProfile-->VoiceConfig: response
+note left
+""{ "profileID": "5bb28e666464c00001bac4cf",""
+""  ...""
+""  "capabilities": {""
+""    "voice": {""
+""      "voiceServices": [""
+""        { "name": "alexaAvs",""
+""          "allowed": true,""
+""          "accountType": "VPA",""
+""          "partnerProductID": "Eddie",""
+""          "settings": {""
+""            "WuWModels": [...]""
+""          },""
+""        { "name": "GVA",""
+""          "allowed": true,""
+""          "accountType": "VPA",""
+""          "partnerProductID": "???",""
+""          "settings": {}""
+""        }""
+""      ]""
+""    }""
+""  }""
+""}""
+end note
+
+VoiceConfig-->Madrid: response
+note left
+""{ "services": [""
+""    { "service": "alexaAvs",""
+""      "canAdd": true,""
+""      "canRemove": true,""
+""      "url": "(host)/services/alexaAvs/activate",""
+""      "supportedLanguages": [""
+""         {"title":"English (US)", "language":"en-US"},""
+""          ... ]""
+""    },""
+""    { "service": "GVA",""
+""      "canAdd": true,""
+""      "canRemove": true,""
+""      "url": "(host)/services/GVA/activate",""
+""    }""
+""  ]""
+""}""
+end note
+
+Madrid->VoiceConfig: GET /services/GVA/activate?serviceParam=<ios|android>
+VoiceConfig->VoiceConfig: Use serviceParam to determine\ndeeplink from GVA configmap.yaml\n(note deeplink is env specific)
+VoiceConfig-->Madrid: response
+note left
+""{ "url": "<deeplink>", ""
+""  "configuration": { ""
+""    "clientID": "<clientID>" ""
+""  } ""
+""} ""
+end note
+Madrid-->User: Display available VPAs\n- **OOB:** //Voice// screen\n- **Non-OOB:** //Voice Assistant//\n in //Settings// screen
+@enduml

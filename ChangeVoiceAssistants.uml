@@ -1,0 +1,60 @@
+@startuml
+title \nChange Voice Assistant\n\n
+
+actor User
+participant Madrid
+
+box "Speaker"
+  participant VPAController
+  participant PassportClient
+  participant AVS
+end box
+box "BoseCloud"
+  participant VoiceConfig
+  participant Passport
+end box
+
+note right User
+  //Settings// screen
+end note
+User->Madrid: selects Voice Assistant
+
+note over Madrid
+  Determine if any VPA
+  currently enabled.
+end note
+
+Madrid->VoiceConfig: GET /services?status=enabled&productID=<productID>
+note over VoiceConfig: Isolate business logic\nin VoiceConfig
+VoiceConfig->Passport: GET /accounts?productID=<productID>&accountType=VPA
+Passport-->VoiceConfig: response
+VoiceConfig-->Madrid: response
+note left
+""{ "services": [""
+""    { "service": "GVA",""
+""      "canAdd": true,""
+""      "canRemove": true,""
+""      "url": "(host)/services/GVA/activate",""
+""      "email": "sc*********@bose.com""",
+""      "status": "enabled"""
+""    }""
+""  ]""
+""}""
+end note
+Madrid-->User: //Voice Settings// screen\ndisplays enabled &\nother available VPAs
+
+User->Madrid: Selects GVA, gives\nconsent to remove AVS
+Madrid->VoiceConfig: DELETE /services/alexaAVS/accounts/<accountID>?productID=<productID>
+VoiceConfig->Passport: DELETE /accounts/<accountID>
+Passport-->VoiceConfig: response
+VoiceConfig-->Madrid: response
+
+Madrid->PassportClient: GET /cloudSync
+PassportClient->Passport: GET /accounts
+Passport-->PassportClient: response
+PassportClient->AVS: notifiyVoiceAccountChanged
+AVS->VPAController: Disable Complete
+VPAController->Madrid: NOTIFY /voice/settings
+note over Madrid: Alexa disabled
+Madrid-->User: Display //Sign in with Google// screen
+@enduml

@@ -1,0 +1,117 @@
+@startuml
+title \nSign in with Google\n\n
+actor User
+
+participant Madrid
+box "Speaker"
+  participant VPAController
+  participant GVA
+  participant LibAssistant
+  participant PassportClient
+end box
+participant AssistantApp
+participant GoogleCloud
+box "BoseCloud"
+  participant ProductState
+  participant Gigya
+  participant SHED
+  participant IdJwt
+  participant Passport
+end box
+
+User->Madrid: select //Sign//\n//in with Google//
+Madrid->VPAController: POST /voice/setup/start\n{"vpaid":"GVA",\n  "bosePersonID":"<bosepersonid>",\n  "clientID":"<clientid>"}\nX-User-Token:<userJWT>
+VPAController->VPAController: extract bosePersonID\nfrom userJWT, verify\nsame as value in\nrequest body
+VPAController->GVA: IPC StartRequest(vpaid:"GVA",\n  bosePersonID:"<bosepersonid>",\n  clientId:"<clientid>")
+
+GVA->GVA: Start timer
+Activate GVA
+
+GVA->GVA: Start MDNS broadcast
+GVA->LibAssistant: Start (client_id="<clientId>")
+GVA->GVA: Save bosePersonID
+GVA->ProductState: PUT /state/<productId>\n {"vpaState":"gvaSettingUp"}
+ProductState-->GVA: response
+GVA-->VPAController: response
+VPAController-->Madrid: response
+
+Madrid->AssistantApp: Deeplink
+note over AssistantApp
+  Display Bose/Gigya login webview,
+  validate creds, store resulting
+  gigyaUserToken in Google cloud
+  (see Life of LibAssistant)
+end note
+AssistantApp->Gigya: Login
+Gigya-->AssistantApp: response\nOEM OAuth tokens
+AssistantApp->GoogleCloud: OEM OAuth tokens
+GoogleCloud->SHED: action.devices.SYNC\ngigyaUserToken
+SHED->IdJwt: tokenExchange\ngigyaUserToken
+IdJwt-->SHED: response\n{userJWT,\nbosePersonId}
+SHED->Passport: GET /users/{bosePersonId}/products\nX-User-Token:<userJWT>
+Passport-->SHED: response ""{"results":[<prodIds>]}""
+SHED->ProductState: GET /state/{productId}
+ProductState-->SHED: response
+note over SHED
+  See "SYNC Changes" subsection above for
+  algorithm which describes how above 
+  responses from Passport and ProductState
+  are used to construct prodIds array.
+end note
+SHED-->GoogleCloud: response {[<prodIds>]}
+note over GoogleCloud
+  Device now in HomeGraph
+  as Works-With
+end note
+GoogleCloud->AssistantApp: available device list\n{[<prodIds>]}
+
+AssistantApp->AssistantApp: Discover local device\nvia mDNS
+note over AssistantApp
+  - Bose speaker listed on Device Found page
+  - User gives consent on Allow this device
+    to use your Assistant
+end note
+AssistantApp->GoogleCloud: Link Assistant Device\n(Request auth_code)
+GoogleCloud->LibAssistant: auth_code & refresh_token
+note over GoogleCloud
+  Device now in HomeGraph
+  as Built-in
+end note
+LibAssistant->GVA: OnAuthentictionReceived(true)
+
+group Retry with backoff until success???
+GVA->GVA: gvaproviderid="gva-<productid>"
+GVA->PassportClient: createGVAAccount\n <bosepersonid>\n <gvaproviderid>
+PassportClient->Passport: POST /accounts X-Product-Token:<productJWT>
+note over PassportClient
+  ""{ **"productID": "<productid>"**,""
+  ""  **"bosePersonID": "<bosepersonid>**,""
+  ""  **"accountType": "VPA"**,""
+  ""  **"provider": "GVA"**,""
+  ""  "providerAccountID": "<gvaproviderid>",""
+  ""  "attributes": {""
+  ""    "email": "sc**********@bose.com",""
+  ""    "env": "latest""
+  ""  }""
+  ""}""
+end note
+Passport->Passport: Verify bosePersonId\nis owner of product
+Passport-->PassportClient: response
+PassportClient-->GVA: response
+end group
+GVA->ProductState: PUT /state/<productId>\n {"vpaState": null}
+ProductState-->GVA: response
+GVA->GVA: Turn off MDNS
+
+Deactivate GVA
+
+GVA->VPAController: Select GVA
+VPAController->GVA: Activate
+GVA-->VPAController: Activate Ack
+
+VPAController->Madrid: NOTIFY\n/voice/settings
+User->AssistantApp: //Done// button click
+AssistantApp-->Madrid: deeplink return done
+
+Madrid-->User: Voice Setup Complete
+@enduml
