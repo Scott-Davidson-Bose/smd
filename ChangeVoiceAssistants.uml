@@ -35,7 +35,7 @@ note left
 ""      "canAdd": true,""
 ""      "canRemove": true,""
 ""      "url": "(host)/services/GVA/activate",""
-""      "email": "sc*********@bose.com""",
+""      <strike>"email": "sc*********@bose.com""",
 ""      "status": "enabled"""
 ""    }""
 ""  ]""
