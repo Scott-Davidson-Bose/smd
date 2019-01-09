@@ -84,15 +84,14 @@ GVA->GVA: gvaproviderid="gva-<productid>"
 GVA->PassportClient: createGVAAccount\n <bosepersonid>\n <gvaproviderid>
 PassportClient->Passport: POST /accounts X-Product-Token:<productJWT>
 note over PassportClient
-  ""{ **"productID": "<productid>"**,""
-  ""  **"bosePersonID": "<bosepersonid>**,""
-  ""  **"accountType": "VPA"**,""
-  ""  **"provider": "GVA"**,""
+  ""{ "productID": "<productid>",""
+  ""  "bosePersonID": "<bosepersonid>,""
+  ""  "accountType": "VPA",""
+  ""  "provider": "GVA",""
   ""  "providerAccountID": "<gvaproviderid>",""
-  ""  "attributes": {""
-  ""    "email": "sc**********@bose.com",""
-  ""    "env": "latest""
-  ""  }""
+  ""  <strike>"attributes": {""
+  ""  <strike>  "email": "sc**********@bose.com",""
+  ""  <strike>  "env": "latest}""
   ""}""
 end note
 Passport->Passport: Verify bosePersonId\nis owner of product
