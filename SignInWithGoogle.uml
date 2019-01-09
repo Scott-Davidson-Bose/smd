@@ -20,9 +20,9 @@ box "BoseCloud"
 end box
 
 User->Madrid: select //Sign//\n//in with Google//
-Madrid->VPAController: POST /voice/setup/start\n{"vpaid":"GVA",\n  "bosePersonID":"<bosepersonid>",\n  "clientID":"<clientid>"}\nX-User-Token:<userJWT>
+Madrid->VPAController: POST /voice/setup/start\n{"vpaID":"GVA",\n  "bosePersonID":"<bosepersonid>",\n  "clientID":"<clientid>",\n "timeout":<time>}\nX-User-Token:<userJWT>
 VPAController->VPAController: extract bosePersonID\nfrom userJWT, verify\nsame as value in\nrequest body
-VPAController->GVA: IPC StartRequest(vpaid:"GVA",\n  bosePersonID:"<bosepersonid>",\n  clientId:"<clientid>")
+VPAController->GVA: IPC StartRequest(vpaid:"GVA",\n  bosePersonID:"<bosepersonid>",\n  clientId:"<clientid>",\n "timeout":<time>)
 
 GVA->GVA: Start timer
 Activate GVA
