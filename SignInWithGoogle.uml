@@ -30,7 +30,7 @@ Activate GVA
 GVA->GVA: Start MDNS broadcast
 GVA->LibAssistant: Start (client_id="<clientId>")
 GVA->GVA: Save bosePersonID
-GVA->ProductState: PUT /state/<productId>\n {"vpaState":"gvaSettingUp"}
+GVA->ProductState: PUT /state/<productId>\n {"gva":{"setupState":"IN_PROGRESS"}}
 ProductState-->GVA: response
 GVA-->VPAController: response
 VPAController-->Madrid: response
@@ -98,7 +98,7 @@ Passport->Passport: Verify bosePersonId\nis owner of product
 Passport-->PassportClient: response
 PassportClient-->GVA: response
 end group
-GVA->ProductState: PUT /state/<productId>\n {"vpaState": null}
+GVA->ProductState: PUT /state/<productId>\n {"gva":{"setupState":"IDLE"}}
 ProductState-->GVA: response
 GVA->GVA: Turn off MDNS
 
